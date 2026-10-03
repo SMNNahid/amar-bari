@@ -3,101 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> আমার বাড়ি বিদ্যুৎ বিল ক্যালকুলেটর (মাল্টি-মেথড)</title>
+    <title>আমার বাড়ি — ডাইনামিক বিদ্যুৎ বিল ক্যালকুলেটর</title>
     
-    <!-- PNG & PDF Export Libraries -->
+    <!-- JPG & PDF Export Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-    <script>
-    // ==================== COOKIE CONSENT SYSTEM ====================
-    const AMAR_BARI_COOKIE_NAME = 'amar_bari_cookie_consent';
-    const AMAR_BARI_COOKIE_DAYS = 180;
-
-    function setCookie(name, value, days) {
-        const maxAge = days * 24 * 60 * 60;
-        document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; Max-Age=${maxAge}; Path=/; SameSite=Lax`;
-    }
-
-    function getCookie(name) {
-        const prefix = encodeURIComponent(name) + '=';
-        const found = document.cookie.split('; ').find(row => row.startsWith(prefix));
-        return found ? decodeURIComponent(found.substring(prefix.length)) : null;
-    }
-
-    function saveConsent(preferences, analytics) {
-        const consent = {
-            necessary: true,
-            preferences: !!preferences,
-            analytics: !!analytics,
-            savedAt: new Date().toISOString()
-        };
-        setCookie(AMAR_BARI_COOKIE_NAME, JSON.stringify(consent), AMAR_BARI_COOKIE_DAYS);
-        document.getElementById('cookieBanner').classList.remove('show');
-        document.getElementById('cookieSettingsFloating').classList.add('show');
-        closeCookieSettings();
-    }
-
-    function acceptAllCookies() {
-        saveConsent(true, true);
-    }
-
-    function saveCookiePreferences() {
-        const preferences = document.getElementById('preferenceCookieToggle').checked;
-        const analytics = document.getElementById('analyticsCookieToggle').checked;
-        saveConsent(preferences, analytics);
-    }
-
-    function openCookieSettings() {
-        const raw = getCookie(AMAR_BARI_COOKIE_NAME);
-        let consent = null;
-
-        try {
-            consent = raw ? JSON.parse(raw) : null;
-        } catch (e) {
-            consent = null;
-        }
-
-        document.getElementById('preferenceCookieToggle').checked = !!(consent && consent.preferences);
-        document.getElementById('analyticsCookieToggle').checked = !!(consent && consent.analytics);
-        document.getElementById('cookieModalOverlay').classList.add('show');
-    }
-
-    function closeCookieSettings() {
-        document.getElementById('cookieModalOverlay').classList.remove('show');
-    }
-
-    function initializeCookieConsent() {
-        const existing = getCookie(AMAR_BARI_COOKIE_NAME);
-
-        if (!existing) {
-            document.getElementById('cookieBanner').classList.add('show');
-        } else {
-            document.getElementById('cookieSettingsFloating').classList.add('show');
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', initializeCookieConsent);
-
-    document.getElementById('cookieModalOverlay').addEventListener('click', function(event) {
-        if (event.target === this) closeCookieSettings();
-    });
-
-    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eef2f5; margin: 0; padding: 20px; color: #333; }
         .container { max-width: 1000px; background: #fff; margin: 0 auto; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
         h2 { text-align: center; color: #1a365d; margin-bottom: 20px; }
-
-        /* Amar Bari brand name */
-        .brand-name {
-            text-align: center;
-            color: #198754;
-            font-size: 32px;
-            font-weight: 700;
-            margin: 0 0 10px 0;
-        }
         
         .tab-container { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #cbd5e0; }
         .tab-btn { padding: 12px 24px; font-size: 16px; font-weight: bold; border: none; background: #e2e8f0; color: #4a5568; border-radius: 8px 8px 0 0; cursor: pointer; transition: 0.2s; }
@@ -129,8 +44,8 @@
         .btn-receipt:hover { background: #1a365d; }
         .btn-danger { background: #e53e3e; }
         .btn-danger:hover { background: #c53030; }
-        .btn-png { background: #38a169; }
-        .btn-png:hover { background: #2f855a; }
+        .btn-jpg { background: #38a169; }
+        .btn-jpg:hover { background: #2f855a; }
         .btn-pdf { background: #dd6b20; }
         .btn-pdf:hover { background: #c05621; }
 
@@ -183,8 +98,22 @@
             .receipt-card { position: absolute; left: 0; top: 0; width: 100%; }
             .modal-btns { display: none; }
         }
+    
+        /* ==================== AMAR BARI BRAND ==================== */
+        .brand-name {
+            text-align: center;
+            color: #0b8f4d;
+            font-size: clamp(32px, 5vw, 52px);
+            font-weight: 800;
+            margin: 0 0 4px 0;
+            line-height: 1.15;
+            letter-spacing: 0;
+        }
+        .brand-name + h2 {
+            margin-top: 4px;
+        }
 
-        /* ==================== PROFESSIONAL COOKIE CONSENT ==================== */
+/* ==================== PROFESSIONAL COOKIE CONSENT ==================== */
         .cookie-banner {
             position: fixed;
             left: 24px;
@@ -430,7 +359,6 @@
                 border-radius: 15px;
             }
         }
-
     </style>
 </head>
 <body>
@@ -530,8 +458,8 @@
 </div>
 
 
+<div class="brand-name">আমার বাড়ি</div>
 <div class="container">
-    <h3 class="brand-name">আমার বাড়ি</h3>
     <h2>⚡ ডাইনামিক বিদ্যুৎ বিল ক্যালকুলেটর</h2>
 
     <!-- মেথড সিলেক্টর ট্যাব -->
@@ -737,7 +665,7 @@
             <p style="margin: 3px 0; font-size:13px; color:#555;"><strong>মোট ব্যবহৃত ইউনিট:</strong> <span id="rUnits"></span></p>
         </div>
         <hr style="border:none; border-top:1px dashed #cbd5e0; margin:10px 0;">
-        <div style="font-size: 13px;"><strong>স্ল্যাব ভিত্তিক খরচের ব্রেকডাউন:</strong></div>
+        <div style="font-size: 13px;"><strong>বিল বিস্তারিত ব্রেকডাউন:</strong></div>
         <table class="receipt-table">
             <tbody id="rBreakdownBody"></tbody>
         </table>
@@ -751,7 +679,7 @@
         
         <div class="modal-btns">
             <button class="btn-info" onclick="closeReceipt()">বন্ধ করুন</button>
-            <button class="btn-png" onclick="downloadReceiptPNG()">🖼️ Download PNG</button>
+            <button class="btn-jpg" onclick="downloadReceiptJPG()">🖼️ Download JPG</button>
             <button class="btn-pdf" onclick="downloadReceiptPDF()">📄 Download PDF</button>
             <button class="btn-receipt" onclick="window.print()">🖨️ প্রিন্ট</button>
         </div>
@@ -835,6 +763,7 @@
                 <td>
                     <div class="action-btns">
                         <button class="btn-info" onclick="toggleS1Breakdown(${t.id})">ব্রেকডাউন</button>
+                        <button class="btn-receipt" onclick="showS1Receipt(${t.id})">রসিদ</button>
                         <button class="btn-danger" onclick="deleteS1Tenant(${t.id})">মুছুন</button>
                     </div>
                 </td>
@@ -860,6 +789,38 @@
     function toggleS1Breakdown(id) {
         const row = document.getElementById(`s1-breakdown-${id}`);
         row.style.display = row.style.display === 'table-row' ? 'none' : 'table-row';
+    }
+
+    function showS1Receipt(id) {
+        const t = s1Tenants.find(item => item.id === id);
+        if (!t) return;
+
+        const month = document.getElementById('s1Month').value;
+        const usedUnits = t.curr - t.prev;
+        const energyCharge = usedUnits * s1AvgRate;
+        const vatAmount = (energyCharge + t.demand) * (t.vatPercent / 100);
+        const totalBill = energyCharge + t.demand + vatAmount;
+
+        document.getElementById('rMonth').innerText = month;
+        document.getElementById('rName').innerText = t.name;
+        document.getElementById('rPrev').innerText = t.prev;
+        document.getElementById('rCurr').innerText = t.curr;
+        document.getElementById('rUnits').innerText = usedUnits.toFixed(2);
+
+        let breakdownTbody = `
+            <tr>
+                <td>ফ্ল্যাট রেট (${usedUnits.toFixed(2)} Unit @ ৳${s1AvgRate.toFixed(4)})</td>
+                <td class="right">৳${energyCharge.toFixed(2)}</td>
+            </tr>
+        `;
+        document.getElementById('rBreakdownBody').innerHTML = breakdownTbody;
+
+        document.getElementById('rEnergyTotal').innerText = `৳${energyCharge.toFixed(2)}`;
+        document.getElementById('rDemand').innerText = `৳${t.demand.toFixed(2)}`;
+        document.getElementById('rVat').innerText = `৳${vatAmount.toFixed(2)} (${t.vatPercent}%)`;
+        document.getElementById('rTotalBill').innerText = `৳${totalBill.toFixed(2)}`;
+
+        document.getElementById('receiptModal').style.display = 'flex';
     }
 
     function deleteS1Tenant(id) { s1Tenants = s1Tenants.filter(t => t.id !== id); renderS1Table(); }
@@ -982,7 +943,7 @@
                 <td>
                     <div class="action-btns">
                         <button class="btn-info" onclick="toggleS2Breakdown(${t.id})">ব্রেকডাউন</button>
-                        <button class="btn-receipt" onclick="showReceipt(${t.id})">রসিদ</button>
+                        <button class="btn-receipt" onclick="showS2Receipt(${t.id})">রসিদ</button>
                         <button class="btn-danger" onclick="deleteS2Tenant(${t.id})">মুছুন</button>
                     </div>
                 </td>
@@ -1009,7 +970,7 @@
         row.style.display = row.style.display === 'table-row' ? 'none' : 'table-row';
     }
 
-    function showReceipt(id) {
+    function showS2Receipt(id) {
         const t = s2Tenants.find(item => item.id === id);
         if (!t) return;
 
@@ -1048,17 +1009,17 @@
 
     function deleteS2Tenant(id) { s2Tenants = s2Tenants.filter(t => t.id !== id); renderS2Table(); }
 
-    // ==================== PNG & PDF DOWNLOAD FUNCTIONS ====================
-    function downloadReceiptPNG() {
+    // ==================== JPG & PDF DOWNLOAD FUNCTIONS ====================
+    function downloadReceiptJPG() {
         const modalBtns = document.querySelector('.modal-btns');
-        modalBtns.style.display = 'none'; // Hide buttons temporarily for clean image
+        modalBtns.style.display = 'none'; // Hide buttons temporarily
 
-        html2canvas(document.getElementById('receiptArea')).then(canvas => {
+        html2canvas(document.getElementById('receiptArea'), { backgroundColor: '#ffffff' }).then(canvas => {
             const link = document.createElement('a');
             const tenantName = document.getElementById('rName').innerText || 'Tenant';
             const month = document.getElementById('rMonth').innerText || 'Bill';
-            link.download = `Electricity_Bill_${tenantName}_${month}.png`;
-            link.href = canvas.toDataURL('image/png');
+            link.download = `Electricity_Bill_${tenantName}_${month}.jpg`;
+            link.href = canvas.toDataURL('image/jpeg', 0.95);
             link.click();
             modalBtns.style.display = 'flex'; // Restore buttons
         });
@@ -1068,8 +1029,8 @@
         const modalBtns = document.querySelector('.modal-btns');
         modalBtns.style.display = 'none'; // Hide buttons temporarily
 
-        html2canvas(document.getElementById('receiptArea')).then(canvas => {
-            const imgData = canvas.toDataURL('image/png');
+        html2canvas(document.getElementById('receiptArea'), { backgroundColor: '#ffffff' }).then(canvas => {
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF('p', 'mm', 'a4');
 
@@ -1077,7 +1038,7 @@
             const pdfWidth = 120; // set width for receipt size in PDF
             const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
-            pdf.addImage(imgData, 'PNG', 45, 20, pdfWidth, pdfHeight);
+            pdf.addImage(imgData, 'JPEG', 45, 20, pdfWidth, pdfHeight);
             
             const tenantName = document.getElementById('rName').innerText || 'Tenant';
             const month = document.getElementById('rMonth').innerText || 'Bill';
@@ -1086,6 +1047,83 @@
         });
     }
 </script>
+
+
+<script>
+    // ==================== COOKIE CONSENT SYSTEM ====================
+    const AMAR_BARI_COOKIE_NAME = 'amar_bari_cookie_consent';
+    const AMAR_BARI_COOKIE_DAYS = 180;
+
+    function setCookie(name, value, days) {
+        const maxAge = days * 24 * 60 * 60;
+        document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; Max-Age=${maxAge}; Path=/; SameSite=Lax`;
+    }
+
+    function getCookie(name) {
+        const prefix = encodeURIComponent(name) + '=';
+        const found = document.cookie.split('; ').find(row => row.startsWith(prefix));
+        return found ? decodeURIComponent(found.substring(prefix.length)) : null;
+    }
+
+    function saveConsent(preferences, analytics) {
+        const consent = {
+            necessary: true,
+            preferences: !!preferences,
+            analytics: !!analytics,
+            savedAt: new Date().toISOString()
+        };
+        setCookie(AMAR_BARI_COOKIE_NAME, JSON.stringify(consent), AMAR_BARI_COOKIE_DAYS);
+        document.getElementById('cookieBanner').classList.remove('show');
+        document.getElementById('cookieSettingsFloating').classList.add('show');
+        closeCookieSettings();
+    }
+
+    function acceptAllCookies() {
+        saveConsent(true, true);
+    }
+
+    function saveCookiePreferences() {
+        const preferences = document.getElementById('preferenceCookieToggle').checked;
+        const analytics = document.getElementById('analyticsCookieToggle').checked;
+        saveConsent(preferences, analytics);
+    }
+
+    function openCookieSettings() {
+        const raw = getCookie(AMAR_BARI_COOKIE_NAME);
+        let consent = null;
+
+        try {
+            consent = raw ? JSON.parse(raw) : null;
+        } catch (e) {
+            consent = null;
+        }
+
+        document.getElementById('preferenceCookieToggle').checked = !!(consent && consent.preferences);
+        document.getElementById('analyticsCookieToggle').checked = !!(consent && consent.analytics);
+        document.getElementById('cookieModalOverlay').classList.add('show');
+    }
+
+    function closeCookieSettings() {
+        document.getElementById('cookieModalOverlay').classList.remove('show');
+    }
+
+    function initializeCookieConsent() {
+        const existing = getCookie(AMAR_BARI_COOKIE_NAME);
+
+        if (!existing) {
+            document.getElementById('cookieBanner').classList.add('show');
+        } else {
+            document.getElementById('cookieSettingsFloating').classList.add('show');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', initializeCookieConsent);
+
+    document.getElementById('cookieModalOverlay').addEventListener('click', function(event) {
+        if (event.target === this) closeCookieSettings();
+    });
+
+    </script>
 
 </body>
 </html>
