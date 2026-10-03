@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>বিদ্যুৎ বিল ক্যালকুলেটর (মাল্টি-মেথড)</title>
+    
+    <!-- PNG & PDF Export Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
+    // ==================== COOKIE CONSENT SYSTEM ====================
+    const AMAR_BARI_COOKIE_NAME = 'amar_bari_cookie_consent';
+    const AMAR_BARI_COOKIE_DAYS = 180;
+
+    function setCookie(name, value, days) {
+        const maxAge = days * 24 * 60 * 60;
+        document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; Max-Age=${maxAge}; Path=/; SameSite=Lax`;
+    }
+
+    function getCookie(name) {
+        const prefix = encodeURIComponent(name) + '=';
+        const found = document.cookie.split('; ').find(row => row.startsWith(prefix));
+        return found ? decodeURIComponent(found.substring(prefix.length)) : null;
+    }
+
+    function saveConsent(preferences, analytics) {
+        const consent = {
+            necessary: true,
+            preferences: !!preferences,
+            analytics: !!analytics,
+            savedAt: new Date().toISOString()
+        };
+        setCookie(AMAR_BARI_COOKIE_NAME, JSON.stringify(consent), AMAR_BARI_COOKIE_DAYS);
+        document.getElementById('cookieBanner').classList.remove('show');
+        document.getElementById('cookieSettingsFloating').classList.add('show');
+        closeCookieSettings();
+    }
+
+    function acceptAllCookies() {
+        saveConsent(true, true);
+    }
+
+    function saveCookiePreferences() {
+        const preferences = document.getElementById('preferenceCookieToggle').checked;
+        const analytics = document.getElementById('analyticsCookieToggle').checked;
+        saveConsent(preferences, analytics);
+    }
+
+    function openCookieSettings() {
+        const raw = getCookie(AMAR_BARI_COOKIE_NAME);
+        let consent = null;
+
+        try {
+            consent = raw ? JSON.parse(raw) : null;
+        } catch (e) {
+            consent = null;
+        }
+
+        document.getElementById('preferenceCookieToggle').checked = !!(consent && consent.preferences);
+        document.getElementById('analyticsCookieToggle').checked = !!(consent && consent.analytics);
+        document.getElementById('cookieModalOverlay').classList.add('show');
+    }
+
+    function closeCookieSettings() {
+        document.getElementById('cookieModalOverlay').classList.remove('show');
+    }
+
+    function initializeCookieConsent() {
+        const existing = getCookie(AMAR_BARI_COOKIE_NAME);
+
+        if (!existing) {
+            document.getElementById('cookieBanner').classList.add('show');
+        } else {
+            document.getElementById('cookieSettingsFloating').classList.add('show');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', initializeCookieConsent);
+
+    document.getElementById('cookieModalOverlay').addEventListener('click', function(event) {
+        if (event.target === this) closeCookieSettings();
+    });
+
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eef2f5; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1000px; background: #fff; margin: 0 auto; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h2 { text-align: center; color: #1a365d; margin-bottom: 20px; }
+        
+        .tab-container { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #cbd5e0; }
+        .tab-btn { padding: 12px 24px; font-size: 16px; font-weight: bold; border: none; background: #e2e8f0; color: #4a5568; border-radius: 8px 8px 0 0; cursor: pointer; transition: 0.2s; }
+        .tab-btn.active { background: #3182ce; color: white; border-bottom: 3px solid #2b6cb0; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin-bottom: 20px; }
+        .card-title { font-size: 16px; font-weight: bold; color: #2b6cb0; margin-bottom: 12px; border-bottom: 2px solid #cbd5e0; padding-bottom: 5px; }
+        
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+        .grid-7 { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+        
+        .form-group { margin-bottom: 10px; }
+        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #4a5568; }
+        input, select { width: 100%; padding: 9px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        input[readonly] { background-color: #edf2f7; font-weight: bold; color: #2d3748; }
+
+        button { background: #319795; color: white; border: none; padding: 7px 12px; font-size: 13px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        button:hover { background: #2c7a7b; }
+        
+        .btn-add { width: 100%; margin-top: 10px; background: #3182ce; padding: 10px; font-size: 15px; }
+        .btn-add:hover { background: #2b6cb0; }
+        .btn-info { background: #4a5568; }
+        .btn-info:hover { background: #2d3748; }
+        .btn-receipt { background: #2b6cb0; }
+        .btn-receipt:hover { background: #1a365d; }
+        .btn-danger { background: #e53e3e; }
+        .btn-danger:hover { background: #c53030; }
+        .btn-png { background: #38a169; }
+        .btn-png:hover { background: #2f855a; }
+        .btn-pdf { background: #dd6b20; }
+        .btn-pdf:hover { background: #c05621; }
+
+        .action-btns {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            align-items: center;
+            white-space: nowrap;
+        }
+        .action-btns button {
+            padding: 6px 10px;
+            font-size: 12px;
+            line-height: 1.2;
+            box-sizing: border-box;
+        }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+        th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: center; vertical-align: middle; }
+        th { background: #edf2f7; color: #2d3748; font-weight: 600; }
+        tr:nth-child(even) { background: #f8fafc; }
+        tfoot tr { background: #e2e8f0; font-weight: bold; }
+
+        .breakdown-row { display: none; background: #edf2f7; }
+        .breakdown-box { padding: 12px; text-align: left; background: #fff; border: 1px dashed #cbd5e0; border-radius: 6px; margin: 5px 10px; }
+        .breakdown-box ul { margin: 5px 0 0 20px; padding: 0; font-size: 13px; color: #2d3748; }
+        .breakdown-box li { margin-bottom: 3px; }
+
+        /* Modal / Receipt Popup Design */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .receipt-card { background: white; width: 450px; padding: 25px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .receipt-header { text-align: center; border-bottom: 2px dashed #cbd5e0; padding-bottom: 10px; margin-bottom: 15px; }
+        .receipt-header h3 { margin: 0 0 5px 0; color: #1a365d; }
+        .receipt-header p { margin: 0; font-size: 12px; color: #718096; }
+        .receipt-table { width: 100%; margin-top: 10px; font-size: 13px; }
+        .receipt-table td { border: none; padding: 5px; text-align: left; }
+        .receipt-table td.right { text-align: right; }
+        .receipt-total { border-top: 2px dashed #333 !important; font-weight: bold; font-size: 15px; }
+        
+        .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
+
+        .reconcile-card { background: #ebf8ff; border: 1px solid #bee3f8; border-radius: 8px; padding: 15px; margin-top: 20px; }
+        .status-badge { display: inline-block; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 14px; }
+        .matched { background: #c6f6d5; color: #22543d; }
+        .mismatched { background: #fed7d7; color: #742a2a; }
+        
+        @media print {
+            body * { visibility: hidden; }
+            .receipt-card, .receipt-card * { visibility: visible; }
+            .receipt-card { position: absolute; left: 0; top: 0; width: 100%; }
+            .modal-btns { display: none; }
+        }
+
+        /* ==================== PROFESSIONAL COOKIE CONSENT ==================== */
+        .cookie-banner {
+            position: fixed;
+            left: 24px;
+            right: 24px;
+            bottom: 24px;
+            z-index: 9999;
+            max-width: 1100px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.98);
+            border: 1px solid #d9e2ec;
+            border-radius: 16px;
+            box-shadow: 0 18px 50px rgba(15, 23, 42, 0.20);
+            padding: 20px;
+            display: none;
+            animation: cookieSlideUp .28s ease-out;
+            backdrop-filter: blur(10px);
+        }
+        .cookie-banner.show { display: block; }
+        .cookie-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 22px;
+        }
+        .cookie-copy { flex: 1; }
+        .cookie-title {
+            margin: 0 0 7px;
+            color: #1a365d;
+            font-size: 18px;
+            font-weight: 800;
+        }
+        .cookie-text {
+            margin: 0;
+            color: #4a5568;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .cookie-text a {
+            color: #2b6cb0;
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .cookie-text a:hover { text-decoration: underline; }
+        .cookie-actions {
+            display: flex;
+            gap: 9px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            min-width: 260px;
+        }
+        .cookie-btn {
+            border: none;
+            border-radius: 9px;
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: .2s ease;
+        }
+        .cookie-btn:hover { transform: translateY(-1px); }
+        .cookie-btn-primary {
+            background: #1a365d;
+            color: #fff;
+        }
+        .cookie-btn-primary:hover { background: #15304f; }
+        .cookie-btn-secondary {
+            background: #edf2f7;
+            color: #2d3748;
+        }
+        .cookie-btn-secondary:hover { background: #e2e8f0; }
+
+        .cookie-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            background: rgba(15,23,42,.55);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .cookie-modal-overlay.show { display: flex; }
+        .cookie-modal {
+            width: min(560px, 100%);
+            max-height: 90vh;
+            overflow-y: auto;
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 25px 70px rgba(0,0,0,.25);
+            padding: 24px;
+        }
+        .cookie-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+        .cookie-modal-header h3 {
+            margin: 0;
+            color: #1a365d;
+            font-size: 20px;
+        }
+        .cookie-close {
+            border: 0;
+            background: #edf2f7;
+            color: #4a5568;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            font-size: 20px;
+            line-height: 1;
+            cursor: pointer;
+        }
+        .cookie-category {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 11px;
+            background: #f8fafc;
+        }
+        .cookie-category-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+        .cookie-category-name {
+            font-weight: 800;
+            color: #2d3748;
+            margin-bottom: 4px;
+        }
+        .cookie-category-desc {
+            color: #718096;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .cookie-status {
+            flex: 0 0 auto;
+            background: #c6f6d5;
+            color: #22543d;
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 11px;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+        .cookie-toggle {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            flex: 0 0 auto;
+        }
+        .cookie-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            position: absolute;
+        }
+        .cookie-slider {
+            position: absolute;
+            inset: 0;
+            background: #cbd5e0;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: .2s;
+        }
+        .cookie-slider:before {
+            content: "";
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            left: 3px;
+            top: 3px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 1px 4px rgba(0,0,0,.2);
+            transition: .2s;
+        }
+        .cookie-toggle input:checked + .cookie-slider {
+            background: #3182ce;
+        }
+        .cookie-toggle input:checked + .cookie-slider:before {
+            transform: translateX(20px);
+        }
+        .cookie-toggle input:disabled + .cookie-slider {
+            opacity: .65;
+            cursor: not-allowed;
+        }
+        .cookie-modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 9px;
+            margin-top: 18px;
+            padding-top: 15px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .cookie-settings-link {
+            position: fixed;
+            left: 14px;
+            bottom: 14px;
+            z-index: 9997;
+            display: none;
+            border: 1px solid #cbd5e0;
+            background: rgba(255,255,255,.96);
+            color: #2d3748;
+            border-radius: 999px;
+            padding: 7px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,.10);
+        }
+        .cookie-settings-link.show { display: block; }
+        @keyframes cookieSlideUp {
+            from { opacity: 0; transform: translateY(18px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @media (max-width: 700px) {
+            .cookie-banner {
+                left: 10px;
+                right: 10px;
+                bottom: 10px;
+                padding: 16px;
+                border-radius: 14px;
+            }
+            .cookie-inner {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 14px;
+            }
+            .cookie-actions {
+                min-width: 0;
+                justify-content: stretch;
+            }
+            .cookie-btn {
+                flex: 1;
+            }
+            .cookie-modal {
+                padding: 18px;
+                border-radius: 15px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+<!-- ==================== PROFESSIONAL COOKIE CONSENT ==================== -->
+<div id="cookieBanner" class="cookie-banner" role="dialog" aria-label="Cookie consent">
+    <div class="cookie-inner">
+        <div class="cookie-copy">
+            <h3 class="cookie-title">🍪 Cookie Preferences</h3>
+            <p class="cookie-text">
+                Amar Bari uses necessary cookies to keep this website functional and to remember your cookie preference.
+                Optional preference/analytics cookies are only enabled when you choose them.
+                <a href="#" onclick="openCookieSettings(); return false;">Cookie Settings</a>
+            </p>
+        </div>
+        <div class="cookie-actions">
+            <button class="cookie-btn cookie-btn-secondary" type="button" onclick="openCookieSettings()">
+                ⚙️ Cookie Settings
+            </button>
+            <button class="cookie-btn cookie-btn-primary" type="button" onclick="acceptAllCookies()">
+                ✓ Accept All
+            </button>
+        </div>
+    </div>
+</div>
+
+<button id="cookieSettingsFloating" class="cookie-settings-link" type="button"
+        onclick="openCookieSettings()" aria-label="Open cookie settings">
+    🍪 Cookie Settings
+</button>
+
+<div id="cookieModalOverlay" class="cookie-modal-overlay" role="dialog" aria-modal="true"
+     aria-labelledby="cookieModalTitle">
+    <div class="cookie-modal">
+        <div class="cookie-modal-header">
+            <div>
+                <h3 id="cookieModalTitle">Cookie Settings</h3>
+                <p style="margin:7px 0 0;color:#718096;font-size:12px;line-height:1.5;">
+                    Manage optional cookies. Necessary cookies remain active because they support
+                    essential website functionality.
+                </p>
+            </div>
+            <button class="cookie-close" type="button" onclick="closeCookieSettings()" aria-label="Close">×</button>
+        </div>
+
+        <div class="cookie-category">
+            <div class="cookie-category-row">
+                <div>
+                    <div class="cookie-category-name">Necessary Cookies</div>
+                    <div class="cookie-category-desc">
+                        Required for core website functionality and to remember your cookie preference.
+                    </div>
+                </div>
+                <span class="cookie-status">Always Active</span>
+            </div>
+        </div>
+
+        <div class="cookie-category">
+            <div class="cookie-category-row">
+                <div>
+                    <div class="cookie-category-name">Preference Cookies</div>
+                    <div class="cookie-category-desc">
+                        Used to remember selected settings and improve your experience.
+                    </div>
+                </div>
+                <label class="cookie-toggle" aria-label="Preference cookies">
+                    <input id="preferenceCookieToggle" type="checkbox">
+                    <span class="cookie-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="cookie-category">
+            <div class="cookie-category-row">
+                <div>
+                    <div class="cookie-category-name">Analytics Cookies</div>
+                    <div class="cookie-category-desc">
+                        Used only if enabled to understand anonymous usage and improve the website.
+                    </div>
+                </div>
+                <label class="cookie-toggle" aria-label="Analytics cookies">
+                    <input id="analyticsCookieToggle" type="checkbox">
+                    <span class="cookie-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="cookie-modal-footer">
+            <button class="cookie-btn cookie-btn-secondary" type="button" onclick="saveCookiePreferences()">
+                Save Preferences
+            </button>
+            <button class="cookie-btn cookie-btn-primary" type="button" onclick="acceptAllCookies()">
+                Accept All
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<div class="container">
+    <h2>⚡ ডাইনামিক বিদ্যুৎ বিল ক্যালকুলেটর</h2>
+
+    <!-- মেথড সিলেক্টর ট্যাব -->
+    <div class="tab-container">
+        <button class="tab-btn active" onclick="switchTab('sec1')">Method 1: সাব-মিটার (ফ্ল্যাট রেট)</button>
+        <button class="tab-btn" onclick="switchTab('sec2')">Method 2: সিঙ্গেল মিটার (DESCO স্ল্যাব রেট)</button>
+    </div>
+
+    <!-- SECTION 1: FLAT RATE SUB-METER -->
+    <div id="sec1" class="tab-content active">
+        <div class="card">
+            <div class="card-title">১. মূল মিটারের হিসাব ও মাস নির্বাচন</div>
+            <div class="grid-4">
+                <div class="form-group">
+                    <label>কোন মাসের বিল:</label>
+                    <select id="s1Month" onchange="updateS1MonthLabel()">
+                        <option value="জানুয়ারি">জানুয়ারি</option><option value="ফেব্রুয়ারি">ফেব্রুয়ারি</option>
+                        <option value="মার্চ">মার্চ</option><option value="এপ্রিল">এপ্রিল</option>
+                        <option value="মে">মে</option><option value="জুন">জুন</option>
+                        <option value="জুলাই">জুলাই</option><option value="আগস্ট">আগস্ট</option>
+                        <option value="সেপ্টেম্বর">সেপ্টেম্বর</option><option value="অক্টোবর">অক্টোবর</option>
+                        <option value="নভেম্বর">নভেম্বর</option><option value="ডিসেম্বর">ডিসেম্বর</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Total bill of main meter (Tk):</label>
+                    <input type="number" id="s1MainBill" placeholder="যেমন: 5000" oninput="calculateS1MainRate()">
+                </div>
+                <div class="form-group">
+                    <label>Total units in main meter:</label>
+                    <input type="number" id="s1MainUnits" placeholder="যেমন: 500" oninput="calculateS1MainRate()">
+                </div>
+                <div class="form-group">
+                    <label>Main Meter Per Unit Cost:</label>
+                    <input type="text" id="s1MainAvgRate" value="0.00 Tk/Unit" readonly>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">২. নতুন ভাড়াটিয়ার সাব-মিটারের তথ্য যোগ করুন</div>
+            <div class="grid-4">
+                <div class="form-group">
+                    <label>ভাড়াটিয়ার নাম/রুম:</label>
+                    <input type="text" id="s1TName" placeholder="যেমন: ফ্ল্যাট A-1">
+                </div>
+                <div class="form-group">
+                    <label>পূর্বের রিডিং (Previous):</label>
+                    <input type="number" id="s1TPrev" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>বর্তমান রিডিং (Current):</label>
+                    <input type="number" id="s1TCurr" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>Demand Charge (Tk) [Optional]:</label>
+                    <input type="number" id="s1TDemand" value="0">
+                </div>
+                <div class="form-group">
+                    <label>VAT (%) [Optional]:</label>
+                    <input type="number" id="s1TVat" value="0" placeholder="যেমন: 5">
+                </div>
+            </div>
+            <button class="btn-add" onclick="addS1Tenant()">+ ভাড়াটিয়া যুক্ত করুন</button>
+        </div>
+
+        <div class="card">
+            <div class="card-title">৩. ভাড়াটিয়াদের বিল তালিকা (<span class="s1-month-text">জানুয়ারি</span>)</div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ভাড়াটিয়া</th>
+                            <th>পূর্বের রিডিং</th>
+                            <th>বর্তমান রিডিং</th>
+                            <th>ব্যবহৃত ইউনিট</th>
+                            <th>ডিমান্ড চার্জ</th>
+                            <th>ইউনিট বিল (Tk)</th>
+                            <th>ভ্যাট</th>
+                            <th>মোট বিল (Tk)</th>
+                            <th>অ্যাকশন</th>
+                        </tr>
+                    </thead>
+                    <tbody id="s1TableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="reconcile-card">
+            <div class="card-title" style="border:none; color:#2c5282;">৪. মূল মিটারের সাথে হিসাবের মিলকরণ (<span class="s1-month-text">জানুয়ারি</span>)</div>
+            <div class="grid-3">
+                <div><strong>মূল মিটারের মোট বিল:</strong> <span id="s1SumMainBill">0.00</span> টাকা</div>
+                <div><strong>সব সাব-মিটারে হিসাবকৃত মোট বিল:</strong> <span id="s1SumTenantBill">0.00</span> টাকা</div>
+                <div><strong>পার্থক্য:</strong> <span id="s1SumDiff">0.00</span> টাকা</div>
+            </div>
+            <div style="margin-top: 15px; text-align: center;">
+                <strong>স্ট্যাটাস:</strong> <span id="s1StatusBadge" class="status-badge mismatched">ডাটা অসম্পূর্ণ / অমিল</span>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- SECTION 2: SINGLE METER DESCO SLAB RATE -->
+    <div id="sec2" class="tab-content">
+        <div class="card">
+            <div class="card-title">১. DESCO স্ল্যাব রেট কনফিগারেশন (প্রয়োজনে রেট এডিট করুন)</div>
+            <div class="grid-7">
+                <div class="form-group"><label>লাইফলাইন (০-৫০):</label><input type="number" id="s2R0" value="5.32" step="0.01"></div>
+                <div class="form-group"><label>১ম (০ - ৭৫):</label><input type="number" id="s2R1" value="6.18" step="0.01"></div>
+                <div class="form-group"><label>২য় (৭৬ - ২০০):</label><input type="number" id="s2R2" value="8.50" step="0.01"></div>
+                <div class="form-group"><label>৩য় (২০১ - ৩০০):</label><input type="number" id="s2R3" value="9.10" step="0.01"></div>
+                <div class="form-group"><label>৪র্থ (৩০১ - ৪০০):</label><input type="number" id="s2R4" value="9.62" step="0.01"></div>
+                <div class="form-group"><label>৫ম (৪০১ - ৬০০):</label><input type="number" id="s2R5" value="15.01" step="0.01"></div>
+                <div class="form-group"><label>৬ষ্ঠ (৬০০+):</label><input type="number" id="s2R6" value="17.35" step="0.01"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">২. সিঙ্গেল মিটারের তথ্য ও রিডিং ইনপুট</div>
+            <div class="grid-4">
+                <div class="form-group">
+                    <label>কোন মাসের বিল:</label>
+                    <select id="s2Month" onchange="updateS2MonthLabel()">
+                        <option value="জানুয়ারি">জানুয়ারি</option><option value="ফেব্রুয়ারি">ফেব্রুয়ারি</option>
+                        <option value="মার্চ">মার্চ</option><option value="এপ্রিল">এপ্রিল</option>
+                        <option value="মে">মে</option><option value="জুন">জুন</option>
+                        <option value="জুলাই">জুলাই</option><option value="আগস্ট">আগস্ট</option>
+                        <option value="সেপ্টেম্বর">সেপ্টেম্বর</option><option value="অক্টোবর">অক্টোবর</option>
+                        <option value="নভেম্বর">নভেম্বর</option><option value="ডিসেম্বর">ডিসেম্বর</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>ভাড়াটিয়ার নাম/মিটার নাম:</label>
+                    <input type="text" id="s2TName" placeholder="যেমন: ফ্ল্যাট B-1">
+                </div>
+                <div class="form-group">
+                    <label>পূর্বের রিডিং (Previous):</label>
+                    <input type="number" id="s2Prev" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>বর্তমান রিডিং (Current):</label>
+                    <input type="number" id="s2Curr" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>Demand Charge (Tk) [Optional]:</label>
+                    <input type="number" id="s2Demand" value="42">
+                </div>
+                <div class="form-group">
+                    <label>VAT (%) [Optional]:</label>
+                    <input type="number" id="s2Vat" value="5" placeholder="যেমন: 5">
+                </div>
+            </div>
+            <button class="btn-add" onclick="addS2Tenant()">+ স্ল্যাব বিলে ভাড়াটিয়া যুক্ত করুন</button>
+        </div>
+
+        <div class="card">
+            <div class="card-title">৩. ভাড়াটিয়াদের বিল তালিকা (<span class="s2-month-text">জানুয়ারি</span>)</div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ভাড়াটিয়া</th>
+                            <th>পূর্বের রিডিং</th>
+                            <th>বর্তমান রিডিং</th>
+                            <th>ব্যবহৃত ইউনিট</th>
+                            <th>ডিমান্ড চার্জ</th>
+                            <th>ইউনিট বিল (Tk)</th>
+                            <th>ভ্যাট</th>
+                            <th>মোট বিল (Tk)</th>
+                            <th>অ্যাকশন</th>
+                        </tr>
+                    </thead>
+                    <tbody id="s2TableBody"></tbody>
+                    <tfoot>
+                        <tr>
+                            <td><strong>সর্বমোট</strong></td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td id="s2TotalUnits">0.00</td>
+                            <td id="s2TotalDemand">0.00</td>
+                            <td id="s2TotalEnergy">0.00</td>
+                            <td id="s2TotalVat">0.00</td>
+                            <td id="s2TotalBill">0.00</td>
+                            <td>-</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DIGITAL RECEIPT MODAL -->
+<div id="receiptModal" class="modal-overlay">
+    <div class="receipt-card" id="receiptArea">
+        <div class="receipt-header">
+            <h3>⚡ বিদ্যুৎ বিল রসিদ</h3>
+            <p>মাস: <span id="rMonth">জানুয়ারি</span></p>
+        </div>
+        <div>
+            <p style="margin: 3px 0; font-size:14px;"><strong>ভাড়াটিয়া:</strong> <span id="rName"></span></p>
+            <p style="margin: 3px 0; font-size:13px; color:#555;">পূর্বের রিডিং: <span id="rPrev"></span> | বর্তমান রিডিং: <span id="rCurr"></span></p>
+            <p style="margin: 3px 0; font-size:13px; color:#555;"><strong>মোট ব্যবহৃত ইউনিট:</strong> <span id="rUnits"></span></p>
+        </div>
+        <hr style="border:none; border-top:1px dashed #cbd5e0; margin:10px 0;">
+        <div style="font-size: 13px;"><strong>স্ল্যাব ভিত্তিক খরচের ব্রেকডাউন:</strong></div>
+        <table class="receipt-table">
+            <tbody id="rBreakdownBody"></tbody>
+        </table>
+        <hr style="border:none; border-top:1px dashed #cbd5e0; margin:10px 0;">
+        <table class="receipt-table">
+            <tr><td>ইউনিট চার্জ মোট:</td><td class="right" id="rEnergyTotal">৳0.00</td></tr>
+            <tr><td>ডিমান্ড চার্জ:</td><td class="right" id="rDemand">৳0.00</td></tr>
+            <tr><td>ভ্যাট:</td><td class="right" id="rVat">৳0.00</td></tr>
+            <tr class="receipt-total"><td>সর্বমোট প্রদেয় বিল:</td><td class="right" id="rTotalBill">৳0.00</td></tr>
+        </table>
+        
+        <div class="modal-btns">
+            <button class="btn-info" onclick="closeReceipt()">বন্ধ করুন</button>
+            <button class="btn-png" onclick="downloadReceiptPNG()">🖼️ Download PNG</button>
+            <button class="btn-pdf" onclick="downloadReceiptPDF()">📄 Download PDF</button>
+            <button class="btn-receipt" onclick="window.print()">🖨️ প্রিন্ট</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+        if (tabId === 'sec1') {
+            document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            document.getElementById('sec1').classList.add('active');
+        } else {
+            document.querySelectorAll('.tab-btn')[1].classList.add('active');
+            document.getElementById('sec2').classList.add('active');
+        }
+    }
+
+    // ==================== SECTION 1 LOGIC ====================
+    let s1Tenants = [];
+    let s1AvgRate = 0;
+
+    function updateS1MonthLabel() {
+        const month = document.getElementById('s1Month').value;
+        document.querySelectorAll('.s1-month-text').forEach(el => el.innerText = month);
+    }
+
+    function calculateS1MainRate() {
+        const bill = parseFloat(document.getElementById('s1MainBill').value) || 0;
+        const units = parseFloat(document.getElementById('s1MainUnits').value) || 0;
+        s1AvgRate = (units > 0 && bill > 0) ? (bill / units) : 0;
+        document.getElementById('s1MainAvgRate').value = s1AvgRate.toFixed(4) + " Tk/Unit";
+        renderS1Table();
+    }
+
+    function addS1Tenant() {
+        if (s1AvgRate <= 0) { alert('দয়া করে মূল মিটারের মোট বিল ও ইউনিট লিখুন!'); return; }
+        const name = document.getElementById('s1TName').value || `Tenant ${s1Tenants.length + 1}`;
+        const prev = parseFloat(document.getElementById('s1TPrev').value) || 0;
+        const curr = parseFloat(document.getElementById('s1TCurr').value) || 0;
+        const demand = parseFloat(document.getElementById('s1TDemand').value) || 0;
+        const vatPercent = parseFloat(document.getElementById('s1TVat').value) || 0;
+
+        if (curr < prev) { alert('বর্তমান রিডিং কম হতে পারে না!'); return; }
+        s1Tenants.push({ id: Date.now(), name, prev, curr, demand, vatPercent });
+        
+        document.getElementById('s1TName').value = '';
+        document.getElementById('s1TPrev').value = '';
+        document.getElementById('s1TCurr').value = '';
+        
+        renderS1Table();
+    }
+
+    function renderS1Table() {
+        const tbody = document.getElementById('s1TableBody');
+        tbody.innerHTML = '';
+        let totalTenantBill = 0;
+
+        s1Tenants.forEach((t) => {
+            const usedUnits = t.curr - t.prev;
+            const energyCharge = usedUnits * s1AvgRate;
+            const vatAmount = (energyCharge + t.demand) * (t.vatPercent / 100);
+            const totalBill = energyCharge + t.demand + vatAmount;
+
+            totalTenantBill += totalBill;
+
+            const mainBill = parseFloat(document.getElementById('s1MainBill').value) || 0;
+            const mainUnits = parseFloat(document.getElementById('s1MainUnits').value) || 0;
+
+            tbody.innerHTML += `<tr>
+                <td><strong>${t.name}</strong></td>
+                <td>${t.prev}</td>
+                <td>${t.curr}</td>
+                <td>${usedUnits.toFixed(2)}</td>
+                <td>${t.demand.toFixed(2)}</td>
+                <td>${energyCharge.toFixed(2)}</td>
+                <td>${vatAmount.toFixed(2)} (${t.vatPercent}%)</td>
+                <td><strong>${totalBill.toFixed(2)}</strong></td>
+                <td>
+                    <div class="action-btns">
+                        <button class="btn-info" onclick="toggleS1Breakdown(${t.id})">ব্রেকডাউন</button>
+                        <button class="btn-danger" onclick="deleteS1Tenant(${t.id})">মুছুন</button>
+                    </div>
+                </td>
+            </tr>
+            <tr id="s1-breakdown-${t.id}" class="breakdown-row">
+                <td colspan="9">
+                    <div class="breakdown-box">
+                        <strong>📊 ${t.name} এর সাব-মিটার ব্রেকডাউন:</strong>
+                        <ul>
+                            <li>মূল মিটারের মোট প্রদেয় বিল: ৳${mainBill.toFixed(2)} (${mainUnits} ইউনিট)</li>
+                            <li>গড় প্রতি ইউনিট রেট: ৳${s1AvgRate.toFixed(4)} / ইউনিট</li>
+                            <li>ভাড়াটিয়ার ইউনিট খরচ: ${usedUnits.toFixed(2)} ইউনিট × ৳${s1AvgRate.toFixed(4)} = ৳${energyCharge.toFixed(2)}</li>
+                            <li>ডিমান্ড চার্জ: ৳${t.demand.toFixed(2)} | ভ্যাট (${t.vatPercent}%): ৳${vatAmount.toFixed(2)}</li>
+                        </ul>
+                    </div>
+                </td>
+            </tr>`;
+        });
+
+        checkS1Reconciliation(totalTenantBill);
+    }
+
+    function toggleS1Breakdown(id) {
+        const row = document.getElementById(`s1-breakdown-${id}`);
+        row.style.display = row.style.display === 'table-row' ? 'none' : 'table-row';
+    }
+
+    function deleteS1Tenant(id) { s1Tenants = s1Tenants.filter(t => t.id !== id); renderS1Table(); }
+
+    function checkS1Reconciliation(totalTenantBill) {
+        const mainBill = parseFloat(document.getElementById('s1MainBill').value) || 0;
+        const diff = Math.abs(mainBill - totalTenantBill);
+
+        document.getElementById('s1SumMainBill').innerText = mainBill.toFixed(2);
+        document.getElementById('s1SumTenantBill').innerText = totalTenantBill.toFixed(2);
+        document.getElementById('s1SumDiff').innerText = diff.toFixed(2);
+
+        const badge = document.getElementById('s1StatusBadge');
+        if (mainBill > 0 && diff < 1.0) {
+            badge.innerText = "✓ মূল বিল ও সাব-মিটার বিল সম্পূর্ণ মিলে গেছে!";
+            badge.className = "status-badge matched";
+        } else {
+            badge.innerText = "✕ মূল বিল ও সাব-মিটার বিলে অমিল রয়েছে";
+            badge.className = "status-badge mismatched";
+        }
+    }
+
+    // ==================== SECTION 2 LOGIC ====================
+    let s2Tenants = [];
+
+    function updateS2MonthLabel() {
+        const month = document.getElementById('s2Month').value;
+        document.querySelectorAll('.s2-month-text').forEach(el => el.innerText = month);
+    }
+
+    function addS2Tenant() {
+        const name = document.getElementById('s2TName').value || `Tenant ${s2Tenants.length + 1}`;
+        const prev = parseFloat(document.getElementById('s2Prev').value) || 0;
+        const curr = parseFloat(document.getElementById('s2Curr').value) || 0;
+        const demand = parseFloat(document.getElementById('s2Demand').value) || 0;
+        const vatPercent = parseFloat(document.getElementById('s2Vat').value) || 0;
+
+        if (curr < prev) { alert('বর্তমান রিডিং কম হতে পারে না!'); return; }
+        s2Tenants.push({ id: Date.now(), name, prev, curr, demand, vatPercent });
+        
+        document.getElementById('s2TName').value = '';
+        document.getElementById('s2Prev').value = '';
+        document.getElementById('s2Curr').value = '';
+
+        renderS2Table();
+    }
+
+    function calculateSlabEnergyDetails(u) {
+        const r0 = parseFloat(document.getElementById('s2R0').value) || 0;
+        const r1 = parseFloat(document.getElementById('s2R1').value) || 0;
+        const r2 = parseFloat(document.getElementById('s2R2').value) || 0;
+        const r3 = parseFloat(document.getElementById('s2R3').value) || 0;
+        const r4 = parseFloat(document.getElementById('s2R4').value) || 0;
+        const r5 = parseFloat(document.getElementById('s2R5').value) || 0;
+        const r6 = parseFloat(document.getElementById('s2R6').value) || 0;
+
+        let totalCharge = 0, breakdown = [];
+
+        if (u <= 50) {
+            let cost = u * r0; totalCharge += cost;
+            breakdown.push({ step: 'লাইফলাইন (০-৫০)', unit: u, rate: r0, cost });
+        } else if (u <= 75) {
+            let cost = u * r1; totalCharge += cost;
+            breakdown.push({ step: '১ম ধাপ (০-৭৫)', unit: u, rate: r1, cost });
+        } else {
+            let cost1 = 75 * r1; totalCharge += cost1;
+            breakdown.push({ step: '১ম ধাপ (০-৭৫)', unit: 75, rate: r1, cost: cost1 });
+            let rem = u - 75;
+
+            if (rem > 0) {
+                let u2 = Math.min(rem, 125); let cost2 = u2 * r2; totalCharge += cost2;
+                breakdown.push({ step: '২য় ধাপ (৭৬-২০০)', unit: u2, rate: r2, cost: cost2 }); rem -= u2;
+            }
+            if (rem > 0) {
+                let u3 = Math.min(rem, 100); let cost3 = u3 * r3; totalCharge += cost3;
+                breakdown.push({ step: '৩য় ধাপ (২০১-৩০০)', unit: u3, rate: r3, cost: cost3 }); rem -= u3;
+            }
+            if (rem > 0) {
+                let u4 = Math.min(rem, 100); let cost4 = u4 * r4; totalCharge += cost4;
+                breakdown.push({ step: '৪র্থ ধাপ (৩০১-৪০০)', unit: u4, rate: r4, cost: cost4 }); rem -= u4;
+            }
+            if (rem > 0) {
+                let u5 = Math.min(rem, 200); let cost5 = u5 * r5; totalCharge += cost5;
+                breakdown.push({ step: '৫ম ধাপ (৪০১-৬০০)', unit: u5, rate: r5, cost: cost5 }); rem -= u5;
+            }
+            if (rem > 0) {
+                let cost6 = rem * r6; totalCharge += cost6;
+                breakdown.push({ step: '৬ষ্ঠ ধাপ (৬০০+)', unit: rem, rate: r6, cost: cost6 });
+            }
+        }
+        return { totalCharge, breakdown };
+    }
+
+    function renderS2Table() {
+        const tbody = document.getElementById('s2TableBody');
+        tbody.innerHTML = '';
+        let totUnits = 0, totDemand = 0, totEnergy = 0, totVat = 0, totBill = 0;
+
+        s2Tenants.forEach((t) => {
+            const usedUnits = t.curr - t.prev;
+            const slabData = calculateSlabEnergyDetails(usedUnits);
+            const energyCharge = slabData.totalCharge;
+            const vatAmount = (energyCharge + t.demand) * (t.vatPercent / 100);
+            const totalBill = energyCharge + t.demand + vatAmount;
+
+            totUnits += usedUnits; totDemand += t.demand; totEnergy += energyCharge; totVat += vatAmount; totBill += totalBill;
+
+            let breakdownHtml = slabData.breakdown.map(i => `<li>${i.step}: ${i.unit} Unit × ৳${i.rate.toFixed(2)} = ৳${i.cost.toFixed(2)}</li>`).join('');
+
+            tbody.innerHTML += `
+            <tr>
+                <td><strong>${t.name}</strong></td>
+                <td>${t.prev}</td>
+                <td>${t.curr}</td>
+                <td>${usedUnits.toFixed(2)}</td>
+                <td>${t.demand.toFixed(2)}</td>
+                <td>${energyCharge.toFixed(2)}</td>
+                <td>${vatAmount.toFixed(2)} (${t.vatPercent}%)</td>
+                <td><strong>${totalBill.toFixed(2)}</strong></td>
+                <td>
+                    <div class="action-btns">
+                        <button class="btn-info" onclick="toggleS2Breakdown(${t.id})">ব্রেকডাউন</button>
+                        <button class="btn-receipt" onclick="showReceipt(${t.id})">রসিদ</button>
+                        <button class="btn-danger" onclick="deleteS2Tenant(${t.id})">মুছুন</button>
+                    </div>
+                </td>
+            </tr>
+            <tr id="s2-breakdown-${t.id}" class="breakdown-row">
+                <td colspan="9">
+                    <div class="breakdown-box">
+                        <strong>📊 ${t.name} এর স্ল্যাব হিসাব:</strong>
+                        <ul>${breakdownHtml}</ul>
+                    </div>
+                </td>
+            </tr>`;
+        });
+
+        document.getElementById('s2TotalUnits').innerText = totUnits.toFixed(2);
+        document.getElementById('s2TotalDemand').innerText = totDemand.toFixed(2);
+        document.getElementById('s2TotalEnergy').innerText = totEnergy.toFixed(2);
+        document.getElementById('s2TotalVat').innerText = totVat.toFixed(2);
+        document.getElementById('s2TotalBill').innerText = totBill.toFixed(2);
+    }
+
+    function toggleS2Breakdown(id) {
+        const row = document.getElementById(`s2-breakdown-${id}`);
+        row.style.display = row.style.display === 'table-row' ? 'none' : 'table-row';
+    }
+
+    function showReceipt(id) {
+        const t = s2Tenants.find(item => item.id === id);
+        if (!t) return;
+
+        const month = document.getElementById('s2Month').value;
+        const usedUnits = t.curr - t.prev;
+        const slabData = calculateSlabEnergyDetails(usedUnits);
+        const vatAmount = (slabData.totalCharge + t.demand) * (t.vatPercent / 100);
+        const totalBill = slabData.totalCharge + t.demand + vatAmount;
+
+        document.getElementById('rMonth').innerText = month;
+        document.getElementById('rName').innerText = t.name;
+        document.getElementById('rPrev').innerText = t.prev;
+        document.getElementById('rCurr').innerText = t.curr;
+        document.getElementById('rUnits').innerText = usedUnits.toFixed(2);
+
+        let breakdownTbody = '';
+        slabData.breakdown.forEach(item => {
+            breakdownTbody += `<tr>
+                <td>${item.step} (${item.unit} Unit @ ৳${item.rate.toFixed(2)})</td>
+                <td class="right">৳${item.cost.toFixed(2)}</td>
+            </tr>`;
+        });
+        document.getElementById('rBreakdownBody').innerHTML = breakdownTbody;
+
+        document.getElementById('rEnergyTotal').innerText = `৳${slabData.totalCharge.toFixed(2)}`;
+        document.getElementById('rDemand').innerText = `৳${t.demand.toFixed(2)}`;
+        document.getElementById('rVat').innerText = `৳${vatAmount.toFixed(2)} (${t.vatPercent}%)`;
+        document.getElementById('rTotalBill').innerText = `৳${totalBill.toFixed(2)}`;
+
+        document.getElementById('receiptModal').style.display = 'flex';
+    }
+
+    function closeReceipt() {
+        document.getElementById('receiptModal').style.display = 'none';
+    }
+
+    function deleteS2Tenant(id) { s2Tenants = s2Tenants.filter(t => t.id !== id); renderS2Table(); }
+
+    // ==================== PNG & PDF DOWNLOAD FUNCTIONS ====================
+    function downloadReceiptPNG() {
+        const modalBtns = document.querySelector('.modal-btns');
+        modalBtns.style.display = 'none'; // Hide buttons temporarily for clean image
+
+        html2canvas(document.getElementById('receiptArea')).then(canvas => {
+            const link = document.createElement('a');
+            const tenantName = document.getElementById('rName').innerText || 'Tenant';
+            const month = document.getElementById('rMonth').innerText || 'Bill';
+            link.download = `Electricity_Bill_${tenantName}_${month}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            modalBtns.style.display = 'flex'; // Restore buttons
+        });
+    }
+
+    function downloadReceiptPDF() {
+        const modalBtns = document.querySelector('.modal-btns');
+        modalBtns.style.display = 'none'; // Hide buttons temporarily
+
+        html2canvas(document.getElementById('receiptArea')).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+
+            const imgProps = pdf.getImageProperties(imgData);
+            const pdfWidth = 120; // set width for receipt size in PDF
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+            pdf.addImage(imgData, 'PNG', 45, 20, pdfWidth, pdfHeight);
+            
+            const tenantName = document.getElementById('rName').innerText || 'Tenant';
+            const month = document.getElementById('rMonth').innerText || 'Bill';
+            pdf.save(`Electricity_Bill_${tenantName}_${month}.pdf`);
+            modalBtns.style.display = 'flex'; // Restore buttons
+        });
+    }
+</script>
+
+</body>
+</html>
